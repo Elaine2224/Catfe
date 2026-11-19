@@ -20,6 +20,7 @@ app.use("/api/pedidos", require("./routes/pedidos"));
 app.use("/api/reservas", require("./routes/reservas"));
 app.use("/api/adopciones", require("./routes/adopciones"));
 app.use("/api/mensajes", require("./routes/mensajes"));
+app.use("/api/auth", require("./routes/auth"));
 app.use("/api/admin", require("./routes/admin"));
 app.use("/api/caja", require("./routes/caja"));
 

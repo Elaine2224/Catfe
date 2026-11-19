@@ -1,29 +1,13 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { iniciarSesionAdmin, obtenerToken, cerrarSesionAdmin } from "../api";
+import { Link, useNavigate } from "react-router-dom";
+import { obtenerSesion, cerrarSesion } from "../api";
 import TablaAdmin from "../components/TablaAdmin";
-import Alerta from "../components/Alerta";
 
 const fechaHora = (fecha) => new Date(fecha).toLocaleString("es-EC");
 
-// Cada pestaña del panel: qué ruta consulta, qué columnas muestra y qué estados permite
+// Cada pestaña del panel: qué ruta consulta, qué columnas muestra y qué estados permite.
+// (El dashboard, los productos y el inventario se agregan en la Etapa 5.)
 const secciones = {
-  pedidos: {
-    titulo: "Pedidos",
-    rutaListar: "/admin/pedidos",
-    rutaCambiar: "/admin/pedidos",
-    estados: ["Pendiente", "Confirmado", "Entregado", "Cancelado"],
-    columnas: [
-      ["Fecha", (p) => fechaHora(p.createdAt)],
-      ["Tipo", (p) => p.tipo],
-      ["Producto", (p) => p.nombreProducto],
-      ["Cant.", (p) => p.cantidad],
-      ["Total", (p) => "$" + p.total.toFixed(2)],
-      ["Cliente", (p) => p.nombreCliente],
-      ["Correo", (p) => p.correo],
-      ["Nota", (p) => p.nota],
-    ],
-  },
   reservas: {
     titulo: "Reservas de mesa",
     rutaListar: "/admin/reservas",
@@ -55,7 +39,7 @@ const secciones = {
   },
   gatos: {
     titulo: "Gatos",
-    rutaListar: "/gatos", // La lista de gatos es pública, pero cambiar su estado exige token
+    rutaListar: "/gatos", // La lista de gatos es pública, pero cambiar su estado exige token de administrador
     rutaCambiar: "/admin/gatos",
     estados: ["Disponible", "Reservado", "Adoptado"],
     columnas: [
@@ -78,53 +62,20 @@ const secciones = {
   },
 };
 
+// Panel del administrador. Solo se llega aquí con sesión de administrador (ver RutaProtegida).
 function Admin() {
-  const [sesionIniciada, setSesionIniciada] = useState(Boolean(obtenerToken()));
-  const [pestana, setPestana] = useState("pedidos");
-  const [datosLogin, setDatosLogin] = useState({ usuario: "", contrasena: "" });
-  const [mensaje, setMensaje] = useState(null);
+  const navigate = useNavigate();
+  const sesion = obtenerSesion();
+  const [pestana, setPestana] = useState("reservas");
 
-  async function iniciarSesion(evento) {
-    evento.preventDefault();
-    try {
-      await iniciarSesionAdmin(datosLogin.usuario, datosLogin.contrasena);
-      setSesionIniciada(true);
-      setMensaje(null);
-    } catch (error) {
-      setMensaje({ tipo: "error", texto: error.message });
-    }
+  function salir() {
+    cerrarSesion();
+    navigate("/login");
   }
 
-  function cerrarSesion() {
-    cerrarSesionAdmin();
-    setSesionIniciada(false);
-    setDatosLogin({ usuario: "", contrasena: "" });
-  }
-
-  // Si no hay sesión, se muestra el formulario de login
-  if (!sesionIniciada) {
-    return (
-      <div className="admin-pagina">
-        <div className="admin-login">
-          <h2 className="section-title">Panel de Administración</h2>
-          <div className="caja-formulario">
-            <form onSubmit={iniciarSesion}>
-              <div className="form-group">
-                <label htmlFor="admin-usuario">Usuario</label>
-                <input type="text" id="admin-usuario" value={datosLogin.usuario} onChange={(e) => setDatosLogin({ ...datosLogin, usuario: e.target.value })} required />
-              </div>
-              <div className="form-group">
-                <label htmlFor="admin-contrasena">Contraseña</label>
-                <input type="password" id="admin-contrasena" value={datosLogin.contrasena} onChange={(e) => setDatosLogin({ ...datosLogin, contrasena: e.target.value })} required />
-              </div>
-              <button type="submit" className="btn btn-primary" style={{ width: "100%" }}>Entrar</button>
-            </form>
-          </div>
-          <Alerta mensaje={mensaje} />
-          <p style={{ textAlign: "center", marginTop: "1.5rem" }}><Link to="/">← Volver al sitio</Link></p>
-        </div>
-      </div>
-    );
+  function sesionVencida() {
+    cerrarSesion();
+    navigate("/login", { state: { aviso: "Tu sesión venció. Inicia sesión de nuevo." } });
   }
 
   return (
@@ -132,8 +83,9 @@ function Admin() {
       <div className="admin-cabecera">
         <h1>Panel de Catfé</h1>
         <div className="admin-cabecera-botones">
+          <span style={{ color: "var(--cream)", alignSelf: "center" }}>Administrador: {sesion ? sesion.usuario : ""}</span>
           <Link to="/" className="btn btn-outline">Ver sitio</Link>
-          <button className="btn btn-outline" onClick={cerrarSesion}>Cerrar sesión</button>
+          <button className="btn btn-outline" onClick={salir}>Cerrar sesión</button>
         </div>
       </div>
       <div className="admin-contenido">
@@ -145,7 +97,7 @@ function Admin() {
           ))}
         </div>
         {/* key={pestana} hace que la tabla se recargue al cambiar de pestaña */}
-        <TablaAdmin key={pestana} seccion={secciones[pestana]} alExpirarSesion={cerrarSesion} />
+        <TablaAdmin key={pestana} seccion={secciones[pestana]} alExpirarSesion={sesionVencida} />
       </div>
     </div>
   );

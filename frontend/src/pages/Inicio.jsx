@@ -3,8 +3,8 @@ import { obtenerProductos, obtenerGatos, obtenerGaleria } from "../api";
 import Navbar from "../components/Navbar";
 import Hero from "../components/Hero";
 import Historia from "../components/Historia";
-import Productos from "../components/Productos";
-import FormularioPedido from "../components/FormularioPedido";
+import Menu from "../components/Menu";
+import Libreria from "../components/Libreria";
 import Gatos from "../components/Gatos";
 import Galeria from "../components/Galeria";
 import ClubLectura from "../components/ClubLectura";
@@ -21,7 +21,6 @@ function Inicio() {
   const [gatos, setGatos] = useState([]);
   const [trabajos, setTrabajos] = useState([]);
   const [errorCarga, setErrorCarga] = useState(null);
-  const [pedidoElegido, setPedidoElegido] = useState({ producto: "", tipo: "compra" });
 
   async function cargarGatos() {
     try {
@@ -45,34 +44,14 @@ function Inicio() {
     cargarDatos();
   }, []);
 
-  // Botones "Pedir" y "Apartar": rellenan el formulario y bajan hasta él
-  function elegirProducto(idProducto, tipo) {
-    setPedidoElegido({ producto: idProducto, tipo });
-    document.getElementById("pedido").scrollIntoView({ behavior: "smooth" });
-  }
-
   return (
     <>
       <Navbar />
       <Hero />
       <Alerta mensaje={errorCarga} />
       <Historia />
-      <Productos
-        id="menu"
-        titulo="Nuestro Menú"
-        subtitulo="Hecho con amor y ingredientes orgánicos"
-        productos={productos.filter((p) => p.categoria === "menu")}
-        alElegir={elegirProducto}
-      />
-      <Productos
-        id="books"
-        titulo="Librería Catfé"
-        subtitulo="Encuentra tu próxima aventura"
-        productos={productos.filter((p) => p.categoria === "libro")}
-        alElegir={elegirProducto}
-        conFondo
-      />
-      <FormularioPedido productos={productos} elegido={pedidoElegido} />
+      <Menu productos={productos} />
+      <Libreria libros={productos.filter((p) => p.categoria === "libro")} />
       <Gatos gatos={gatos} recargarGatos={cargarGatos} />
       <Galeria trabajos={trabajos} />
       <ClubLectura />

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { enviarFormulario } from "../api";
 import Alerta from "./Alerta";
+import ImagenTarjeta from "./ImagenTarjeta";
 
 const datosVacios = { nombre: "", correo: "", telefono: "", mensaje: "" };
 
@@ -41,7 +42,7 @@ function Gatos({ gatos, recargarGatos }) {
           const disponible = gato.estado === "Disponible";
           return (
             <div className="card cat-card" key={gato._id}>
-              <div className="card-img" style={{ backgroundImage: `url('${gato.imagen}')` }}></div>
+              <ImagenTarjeta src={gato.imagen} alt={gato.nombre} icono="🐱" />
               <div className="card-content">
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
                   <h3 className="card-title">{gato.nombre}</h3>

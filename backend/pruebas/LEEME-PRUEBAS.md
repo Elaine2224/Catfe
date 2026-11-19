@@ -31,7 +31,7 @@ Puedes tener tu `npm run dev` abierto al mismo tiempo, sin problema.
 
 | Comando | Qué hace |
 |---|---|
-| `npm run probar` | Todas las pruebas: compra, caja, permisos, concurrencia y adopciones |
+| `npm run probar` | Todas las pruebas: compra, caja, login y permisos, concurrencia, adopciones, productos, inventario y dashboard |
 | `npm run probar:fallo` | Provoca un error a propósito a mitad del proceso y comprueba que todo se restaura |
 | `npm run probar:corte` | Corta la limpieza a la mitad y comprueba que repetirla no devuelve el stock dos veces |
 | `npm run probar:transacciones` | Comprueba que tu Atlas admite transacciones |

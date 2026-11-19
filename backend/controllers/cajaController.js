@@ -31,10 +31,17 @@ async function lanzarPedidoNoDisponible(id, mensajeProcesado, session) {
   throw new ErrorDeNegocio(mensajeProcesado, 400);
 }
 
+// El cajero no necesita (ni debe ver) el token privado de seguimiento del cliente
+function sinToken(pedido) {
+  const datos = pedido.toObject();
+  delete datos.tokenSeguimiento;
+  return datos;
+}
+
 // GET /api/caja/pedidos  -> todos los pedidos, los más recientes primero
 async function listarPedidos(req, res, next) {
   try {
-    res.json(await Pedido.find().sort({ createdAt: -1 }));
+    res.json(await Pedido.find().select("-tokenSeguimiento").sort({ createdAt: -1 }));
   } catch (error) {
     next(error);
   }
@@ -78,7 +85,7 @@ async function confirmarPago(req, res, next) {
       return actualizado;
     });
 
-    res.json(pedido);
+    res.json(sinToken(pedido));
   } catch (error) {
     responderError(error, res, next);
   }
@@ -96,7 +103,7 @@ async function rechazarPago(req, res, next) {
     if (!actualizado) {
       await lanzarPedidoNoDisponible(req.params.id, "Solo se puede rechazar un pago que está pendiente de verificación");
     }
-    res.json(actualizado);
+    res.json(sinToken(actualizado));
   } catch (error) {
     responderError(error, res, next);
   }
@@ -114,7 +121,7 @@ async function entregarPedido(req, res, next) {
     if (!actualizado) {
       await lanzarPedidoNoDisponible(req.params.id, "Este pedido no está listo para retiro (ya fue entregado, cancelado o no está pagado)");
     }
-    res.json(actualizado);
+    res.json(sinToken(actualizado));
   } catch (error) {
     responderError(error, res, next);
   }
@@ -143,7 +150,7 @@ async function cancelarPedido(req, res, next) {
       return Pedido.findById(req.params.id).session(session);
     });
 
-    res.json(pedido);
+    res.json(sinToken(pedido));
   } catch (error) {
     responderError(error, res, next);
   }

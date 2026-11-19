@@ -12,7 +12,8 @@
     "probar:fallo": "node --env-file=.env.pruebas pruebas/probarFlujo.js --simular-fallo",
     "probar:corte": "node --env-file=.env.pruebas pruebas/probarFlujo.js --simular-corte-limpieza",
     "probar:limpiar": "node --env-file=.env.pruebas pruebas/probarFlujo.js --limpiar",
-    "probar:transacciones": "node --env-file=.env.pruebas pruebas/probarTransacciones.js"
+    "probar:transacciones": "node --env-file=.env.pruebas pruebas/probarTransacciones.js",
+    "pedido:ejemplo": "node pruebas/pedidoDeEjemplo.js"
   },
   "license": "ISC",
   "dependencies": {

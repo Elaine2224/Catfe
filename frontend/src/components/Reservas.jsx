@@ -32,6 +32,7 @@ function Reservas() {
         <div style={{ maxWidth: "800px", margin: "0 auto" }}>
           <h2 className="section-title">Reserva tu Mesa</h2>
           <p className="section-subtitle" style={{ color: "var(--sage)" }}>Asegura tu rincón favorito</p>
+          <p className="aviso-reserva">📖 Tu reserva incluye leer los libros de nuestra librería durante tu visita.</p>
           <form onSubmit={enviar}>
             <div className="form-row">
               <div className="form-group">

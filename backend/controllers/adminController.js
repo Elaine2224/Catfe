@@ -1,31 +1,7 @@
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-const Admin = require("../models/Admin");
 const ReservaMesa = require("../models/ReservaMesa");
 const SolicitudAdopcion = require("../models/SolicitudAdopcion");
 const Mensaje = require("../models/Mensaje");
 const Gato = require("../models/Gato");
-
-// POST /api/admin/login  (sirve para el administrador y para el cajero)
-async function iniciarSesion(req, res, next) {
-  try {
-    const { usuario, contrasena } = req.body;
-
-    const admin = await Admin.findOne({ usuario });
-    // Usamos el mismo mensaje si falla el usuario o la contraseña
-    const contrasenaCorrecta = admin && (await bcrypt.compare(contrasena || "", admin.contrasena));
-
-    if (!contrasenaCorrecta) {
-      return res.status(401).json({ mensaje: "Usuario o contraseña incorrectos" });
-    }
-
-    // El token lleva el rol, que luego revisa el middleware verificarRol
-    const token = jwt.sign({ id: admin._id, usuario: admin.usuario, rol: admin.rol }, process.env.JWT_SECRET, { expiresIn: "8h" });
-    res.json({ token, usuario: admin.usuario, rol: admin.rol });
-  } catch (error) {
-    next(error);
-  }
-}
 
 // ----- Listados (los más recientes primero) -----
 async function obtenerReservas(req, res, next) {
@@ -120,7 +96,6 @@ async function cambiarEstadoGato(req, res, next) {
 }
 
 module.exports = {
-  iniciarSesion,
   obtenerReservas,
   obtenerSolicitudes,
   obtenerMensajes,

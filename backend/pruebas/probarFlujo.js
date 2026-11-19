@@ -58,6 +58,8 @@ const PREFIJO_REFERENCIA = "T" + ID.toUpperCase();
 const FILTRO_PEDIDOS = { nombreCliente: MARCA, correo: CORREO };
 const FILTRO_SOLICITUDES = { nombre: MARCA, correo: CORREO };
 const FILTRO_GATOS = { nombre: MARCA, descripcion: DESCRIPCION_GATO };
+const DESCRIPCION_PRODUCTO = `Producto creado por la prueba automática ${ID}`;
+const FILTRO_PRODUCTOS = { nombre: new RegExp(`^PRUEBA ${ID}`), descripcion: DESCRIPCION_PRODUCTO };
 
 let correctas = 0;
 let falladas = 0;
@@ -185,8 +187,9 @@ async function limpiar({ simularCorte = false } = {}) {
   const pedidos = await Pedido.deleteMany(FILTRO_PEDIDOS);
   const solicitudes = await SolicitudAdopcion.deleteMany(FILTRO_SOLICITUDES);
   const gatos = await Gato.deleteMany(FILTRO_GATOS);
+  const productos = await Producto.deleteMany(FILTRO_PRODUCTOS); // después de los pedidos que los usaban
 
-  console.log(`  🧹 id ${ID}: ${pedidos.deletedCount} pedidos, ${solicitudes.deletedCount} solicitudes y ${gatos.deletedCount} gato(s) de prueba borrados; stock devuelto en ${devueltos} pedido(s)`);
+  console.log(`  🧹 id ${ID}: ${pedidos.deletedCount} pedidos, ${solicitudes.deletedCount} solicitudes, ${gatos.deletedCount} gato(s) y ${productos.deletedCount} producto(s) de prueba borrados; stock devuelto en ${devueltos} pedido(s)`);
 }
 
 async function verificarRestauracion() {
@@ -205,6 +208,7 @@ async function verificarRestauracion() {
   comprobar("No quedó ningún pedido de prueba", (await Pedido.countDocuments(FILTRO_PEDIDOS)) === 0);
   comprobar("No quedó ninguna solicitud de adopción de prueba", (await SolicitudAdopcion.countDocuments(FILTRO_SOLICITUDES)) === 0);
   comprobar("No quedó ningún gato de prueba", (await Gato.countDocuments(FILTRO_GATOS)) === 0);
+  comprobar("No quedó ningún producto de prueba", (await Producto.countDocuments(FILTRO_PRODUCTOS)) === 0);
 }
 
 // Avisa (sin borrar nada) si hay restos de una ejecución anterior que se cortó de golpe
@@ -227,6 +231,10 @@ async function avisarRestosAnteriores() {
     const id = idDe(g.nombre, /^PRUEBA ([0-9a-f]{10})$/);
     if (id && g.descripcion === `Gato creado por la prueba automática ${id}`) ids.add(id);
   }
+  for (const p of await Producto.find({ nombre: /^PRUEBA [0-9a-f]{10}/ }, { nombre: 1, descripcion: 1 })) {
+    const id = idDe(p.nombre, /^PRUEBA ([0-9a-f]{10})/);
+    if (id && p.descripcion === `Producto creado por la prueba automática ${id}`) ids.add(id);
+  }
   ids.delete(ID);
 
   if (ids.size > 0) {
@@ -241,8 +249,8 @@ async function avisarRestosAnteriores() {
 // ---------------------------------------------------------------------------
 async function prepararContexto() {
   console.log("\n▶ Preparación: iniciar sesión y leer el catálogo");
-  const loginAdmin = await llamar("POST", "/admin/login", { usuario: process.env.ADMIN_USUARIO, contrasena: process.env.ADMIN_PASSWORD });
-  const loginCajero = await llamar("POST", "/admin/login", { usuario: process.env.CAJERO_USUARIO, contrasena: process.env.CAJERO_PASSWORD });
+  const loginAdmin = await llamar("POST", "/auth/login", { usuario: process.env.ADMIN_USUARIO, contrasena: process.env.ADMIN_PASSWORD });
+  const loginCajero = await llamar("POST", "/auth/login", { usuario: process.env.CAJERO_USUARIO, contrasena: process.env.CAJERO_PASSWORD });
   comprobar("El administrador inicia sesión con rol admin", loginAdmin.estado === 200 && loginAdmin.datos.rol === "admin", JSON.stringify(loginAdmin.datos));
   comprobar("El cajero inicia sesión con rol cajero", loginCajero.estado === 200 && loginCajero.datos.rol === "cajero", JSON.stringify(loginCajero.datos));
   if (loginAdmin.estado !== 200 || loginCajero.estado !== 200) {
@@ -402,6 +410,17 @@ async function ejecutarPruebas(contexto) {
   comprobar("Admin con token de cajero: 403", (await llamar("GET", "/admin/reservas", null, tokenCajero)).estado === 403);
   comprobar("Admin con token de administrador: 200", (await llamar("GET", "/admin/reservas", null, tokenAdmin)).estado === 200);
   comprobar("Caja con token de cajero: 200", (await llamar("GET", "/caja/pedidos", null, tokenCajero)).estado === 200);
+
+  console.log("\n▶ 5b. Autenticación");
+  const malLogin = await llamar("POST", "/auth/login", { usuario: process.env.ADMIN_USUARIO, contrasena: "incorrecta" });
+  comprobar("Contraseña incorrecta: 401", malLogin.estado === 401 && !malLogin.datos.token);
+  const otroLogin = await llamar("POST", "/auth/login", { usuario: "no-existe", contrasena: "x" });
+  comprobar("Usuario inexistente: 401 con el mismo mensaje (no revela qué falló)", otroLogin.estado === 401 && otroLogin.datos.mensaje === malLogin.datos.mensaje);
+  comprobar("Login sin datos: 401", (await llamar("POST", "/auth/login", {})).estado === 401);
+  comprobar("Login con objetos en vez de texto: 401", (await llamar("POST", "/auth/login", { usuario: { $ne: "" }, contrasena: { $ne: "" } })).estado === 401);
+  comprobar("Un token alterado: 401", (await llamar("GET", "/caja/pedidos", null, tokenCajero.slice(0, -3) + "abc")).estado === 401);
+  comprobar("La ruta antigua /admin/login ya no inicia sesión", !(await llamar("POST", "/admin/login", { usuario: process.env.ADMIN_USUARIO, contrasena: process.env.ADMIN_PASSWORD })).datos.token);
+  comprobar("El cajero no ve los tokens privados de seguimiento", !JSON.stringify((await llamar("GET", "/caja/pedidos", null, tokenCajero)).datos).includes("tokenSeguimiento"));
 
   // ---------- 6. Confirmar pago y entregar ----------
   console.log("\n▶ 6. Confirmar pago, retiro y entrega");
@@ -616,6 +635,127 @@ async function ejecutarPruebas(contexto) {
   await cambiar(C.datos.solicitud._id, "Rechazada");
   comprobar("Rechazar C estando Adoptado: NO vuelve a Disponible", (await estadoGato()) === "Adoptado");
   comprobar("Un estado inventado se rechaza", (await cambiar(C.datos.solicitud._id, "Inventado")).estado === 400);
+
+  // ---------- 11. Administrador: productos, inventario y dashboard ----------
+  console.log("\n▶ 11. Administrador: permisos, productos, inventario y dashboard");
+  { // (bloque propio: sus variables no se mezclan con las de otras secciones)
+  const dash = async () => (await llamar("GET", "/admin/dashboard", null, tokenAdmin)).datos;
+  const crearProductoPrueba = (extra) =>
+    llamar("POST", "/admin/productos", { descripcion: DESCRIPCION_PRODUCTO, categoria: "postres", imagen: "https://example.com/foto.jpg", ...extra }, tokenAdmin);
+  const casi = (a, b) => Math.abs(a - b) < 0.005;
+  const IDFALSO = "000000000000000000000000"; // (un id válido que no existe, para probar permisos sin riesgo)
+
+  comprobar("Dashboard sin token: 401", (await llamar("GET", "/admin/dashboard")).estado === 401);
+  comprobar("El cajero no ve el dashboard (403)", (await llamar("GET", "/admin/dashboard", null, tokenCajero)).estado === 403);
+  comprobar("El cajero no puede crear productos (403)", (await llamar("POST", "/admin/productos", { nombre: "x", precio: 1, categoria: "postres" }, tokenCajero)).estado === 403);
+  comprobar("El cajero no puede editar productos (403)", (await llamar("PUT", `/admin/productos/${IDFALSO}`, { precio: 1 }, tokenCajero)).estado === 403);
+  comprobar("El cajero no puede cambiar el stock (403)", (await llamar("PUT", `/admin/productos/${IDFALSO}/stock`, { stock: 1 }, tokenCajero)).estado === 403);
+  comprobar("El cajero no puede eliminar productos (403)", (await llamar("DELETE", `/admin/productos/${IDFALSO}`, null, tokenCajero)).estado === 403);
+  comprobar("El cajero no ve el inventario (403)", (await llamar("GET", "/admin/inventario", null, tokenCajero)).estado === 403);
+
+  const invalidos = [
+    ["Sin nombre", crearProductoPrueba({ nombre: "", precio: 2 })],
+    ["Precio negativo", crearProductoPrueba({ nombre: `${MARCA} v`, precio: -1 })],
+    ["Precio que no es número", crearProductoPrueba({ nombre: `${MARCA} v`, precio: "abc" })],
+    ["Producto de menú sin precio", crearProductoPrueba({ nombre: `${MARCA} v` })],
+    ["Stock decimal", crearProductoPrueba({ nombre: `${MARCA} v`, precio: 2, stock: 1.5 })],
+    ["Stock negativo", crearProductoPrueba({ nombre: `${MARCA} v`, precio: 2, stock: -3 })],
+    ["Categoría inválida", crearProductoPrueba({ nombre: `${MARCA} v`, precio: 2, categoria: "pizzas" })],
+    ["Imagen que no es un enlace http(s)", crearProductoPrueba({ nombre: `${MARCA} v`, precio: 2, imagen: "foto.jpg" })],
+  ];
+  for (const [nombre, promesa] of invalidos) {
+    const r = await promesa;
+    comprobar(`Crear producto: ${nombre} se rechaza (400)`, r.estado === 400, `(estado ${r.estado}: ${r.datos.mensaje})`);
+  }
+
+  const dashAntes = await dash();
+  const prodA = await crearProductoPrueba({ nombre: `${MARCA} A`, precio: 2.5, stock: 20 });
+  const prodB = await crearProductoPrueba({ nombre: `${MARCA} B`, precio: 3, stock: 3, categoria: "bebidas-frias" });
+  const prodC = await crearProductoPrueba({ nombre: `${MARCA} C`, precio: 4, stock: 0 });
+  comprobar("Crear 3 productos de prueba (201)", [prodA, prodB, prodC].every((r) => r.estado === 201), JSON.stringify([prodA.datos, prodB.datos, prodC.datos]));
+  const idA = prodA.datos._id;
+  const idB = prodB.datos._id;
+  const idC = prodC.datos._id;
+
+  const libroPrueba = await llamar("POST", "/admin/productos", { nombre: `${MARCA} Libro`, descripcion: DESCRIPCION_PRODUCTO, categoria: "libro", precio: 99, stock: 50 }, tokenAdmin);
+  comprobar("Un libro se guarda sin precio y con stock 0", libroPrueba.estado === 201 && libroPrueba.datos.precio === undefined && libroPrueba.datos.stock === 0, JSON.stringify(libroPrueba.datos));
+  const listaAdmin = (await llamar("GET", "/admin/productos", null, tokenAdmin)).datos;
+  comprobar("La lista de productos del administrador incluye menú y libros", listaAdmin.some((p) => p._id === idA) && listaAdmin.some((p) => p._id === libroPrueba.datos._id));
+
+  // Inventario y avisos
+  const inv = (await llamar("GET", "/admin/inventario", null, tokenAdmin)).datos;
+  const nivelDe = (id) => (inv.find((p) => p._id === id) || {}).nivel;
+  comprobar("Inventario: A disponible (20), B pocas (3), C agotado (0)", nivelDe(idA) === "disponible" && nivelDe(idB) === "pocas" && nivelDe(idC) === "agotado", JSON.stringify([nivelDe(idA), nivelDe(idB), nivelDe(idC)]));
+  comprobar("Los libros no aparecen en el inventario", !inv.some((p) => p._id === libroPrueba.datos._id));
+  const dash1 = await dash();
+  comprobar("El dashboard suma 1 agotado y 1 con pocas existencias", dash1.inventario.agotados === dashAntes.inventario.agotados + 1 && dash1.inventario.pocasExistencias === dashAntes.inventario.pocasExistencias + 1);
+
+  // Ventas: pendiente, pagado, entregado
+  const ped1 = await crearPedido([{ producto: idA, cantidad: 4 }, { producto: idB, cantidad: 1 }]); // 4 x 2.50 + 1 x 3 = 13
+  comprobar("Pedido con productos de prueba: total $13", ped1.estado === 201 && casi(ped1.datos.total, 13), JSON.stringify(ped1.datos));
+  const dash2 = await dash();
+  comprobar("Un pedido pendiente NO cuenta como venta", casi(dash2.totalVendido, dashAntes.totalVendido) && dash2.pedidosPagados === dashAntes.pedidosPagados);
+  comprobar("Pero sí suma 1 a 'pendientes de verificación'", dash2.pendientesVerificacion === dashAntes.pendientesVerificacion + 1);
+
+  const id1 = (await pedidoDeCaja(ped1.datos.codigo, tokenCajero))._id;
+  await llamar("PUT", `/caja/pedidos/${id1}/confirmar-pago`, null, tokenCajero);
+  const dash3 = await dash();
+  comprobar("Al confirmar el pago: +$13 y +1 pedido pagado", casi(dash3.totalVendido, dashAntes.totalVendido + 13) && dash3.pedidosPagados === dashAntes.pedidosPagados + 1, JSON.stringify([dash3.totalVendido, dashAntes.totalVendido]));
+  comprobar("Y los pendientes vuelven al valor inicial", dash3.pendientesVerificacion === dashAntes.pendientesVerificacion);
+  const filaA = dash3.ventasPorProducto.find((p) => p.nombre === `${MARCA} A`);
+  const filaB = dash3.ventasPorProducto.find((p) => p.nombre === `${MARCA} B`);
+  comprobar("Ventas por producto: A = 4 unidades y $10; B = 1 unidad y $3", Boolean(filaA && filaB) && filaA.unidades === 4 && casi(filaA.total, 10) && filaB.unidades === 1 && casi(filaB.total, 3), JSON.stringify([filaA, filaB]));
+  comprobar("Producto más vendido: coincide con el de más unidades", Boolean(dash3.productoMasVendido) && dash3.productoMasVendido.unidades === Math.max(...dash3.ventasPorProducto.map((p) => p.unidades)));
+  const inv2 = (await llamar("GET", "/admin/inventario", null, tokenAdmin)).datos;
+  comprobar("El stock bajó al confirmar (A = 16, B = 2 con pocas existencias)", inv2.find((p) => p._id === idA).stock === 16 && inv2.find((p) => p._id === idB).stock === 2 && inv2.find((p) => p._id === idB).nivel === "pocas");
+
+  await llamar("PUT", `/caja/pedidos/${id1}/entregar`, null, tokenCajero);
+  const dash4 = await dash();
+  comprobar("Entregar no cuenta la venta dos veces", casi(dash4.totalVendido, dashAntes.totalVendido + 13) && dash4.pedidosPagados === dashAntes.pedidosPagados + 1);
+
+  // Cancelado y rechazado no suman
+  const ped2 = await crearPedido([{ producto: idA, cantidad: 2 }]); // $5
+  const id2 = (await pedidoDeCaja(ped2.datos.codigo, tokenCajero))._id;
+  await llamar("PUT", `/caja/pedidos/${id2}/confirmar-pago`, null, tokenCajero);
+  comprobar("Un segundo pedido pagado suma $5", casi((await dash()).totalVendido, dashAntes.totalVendido + 18));
+  await llamar("PUT", `/caja/pedidos/${id2}/cancelar`, null, tokenCajero);
+  const dash5 = await dash();
+  comprobar("Un pedido cancelado deja de contar como venta", casi(dash5.totalVendido, dashAntes.totalVendido + 13) && dash5.pedidosPagados === dashAntes.pedidosPagados + 1);
+  const ped3 = await crearPedido([{ producto: idA, cantidad: 1 }]);
+  const id3 = (await pedidoDeCaja(ped3.datos.codigo, tokenCajero))._id;
+  await llamar("PUT", `/caja/pedidos/${id3}/rechazar-pago`, null, tokenCajero);
+  comprobar("Un pago rechazado no cuenta como venta", casi((await dash()).totalVendido, dashAntes.totalVendido + 13));
+
+  // Editar un producto
+  comprobar("Editar con un precio negativo se rechaza (400)", (await llamar("PUT", `/admin/productos/${idA}`, { precio: -5 }, tokenAdmin)).estado === 400);
+  comprobar("Editar un producto que no existe: 404", (await llamar("PUT", `/admin/productos/${IDFALSO}`, { precio: 5 }, tokenAdmin)).estado === 404);
+  const editado = await llamar("PUT", `/admin/productos/${idA}`, { precio: 9, etiqueta: "Nuevo", nombre: `${MARCA} A` }, tokenAdmin);
+  comprobar("Cambiar el precio y la etiqueta funciona", editado.estado === 200 && editado.datos.precio === 9 && editado.datos.etiqueta === "Nuevo", JSON.stringify(editado.datos));
+  const reg1 = await pedidoDeCaja(ped1.datos.codigo, tokenCajero);
+  comprobar("El pedido anterior conserva el precio original ($2,50)", reg1.items.find((i) => i.nombreProducto === `${MARCA} A`).precioUnitario === 2.5);
+  const pedNuevo = await crearPedido([{ producto: idA, cantidad: 1 }]);
+  comprobar("Un pedido nuevo usa el precio nuevo ($9)", pedNuevo.estado === 201 && casi(pedNuevo.datos.total, 9), JSON.stringify(pedNuevo.datos));
+
+  // Cambiar el stock
+  const conStock = await llamar("PUT", `/admin/productos/${idB}/stock`, { stock: 12 }, tokenAdmin);
+  comprobar("Cambiar el stock de B a 12: queda disponible", conStock.estado === 200 && conStock.datos.stock === 12 && conStock.datos.nivel === "disponible", JSON.stringify(conStock.datos));
+  for (const [nombre, valor] of [["negativo", -1], ["decimal", 2.5], ["texto", "abc"], ["vacío", ""], ["nulo", null]]) {
+    comprobar(`Stock ${nombre} se rechaza (400)`, (await llamar("PUT", `/admin/productos/${idB}/stock`, { stock: valor }, tokenAdmin)).estado === 400);
+  }
+  comprobar("Un libro no tiene inventario (400)", (await llamar("PUT", `/admin/productos/${libroPrueba.datos._id}/stock`, { stock: 5 }, tokenAdmin)).estado === 400);
+  comprobar("Stock de un producto que no existe: 404", (await llamar("PUT", `/admin/productos/${IDFALSO}/stock`, { stock: 5 }, tokenAdmin)).estado === 404);
+
+  // Eliminar productos
+  const bloqueado = await llamar("DELETE", `/admin/productos/${idA}`, null, tokenAdmin);
+  comprobar("No se puede eliminar un producto que está en pedidos sin terminar (400)", bloqueado.estado === 400, `(${bloqueado.estado}: ${bloqueado.datos.mensaje})`);
+  const idNuevo = (await pedidoDeCaja(pedNuevo.datos.codigo, tokenCajero))._id;
+  await llamar("PUT", `/caja/pedidos/${idNuevo}/rechazar-pago`, null, tokenCajero);
+  const eliminado = await llamar("DELETE", `/admin/productos/${idA}`, null, tokenAdmin);
+  comprobar("Sin pedidos sin terminar, se puede eliminar", eliminado.estado === 200, `(${eliminado.estado}: ${eliminado.datos.mensaje})`);
+  comprobar("Las ventas de un producto eliminado siguen en el dashboard", (await dash()).ventasPorProducto.some((p) => p.nombre === `${MARCA} A`));
+  comprobar("Eliminar otra vez: 404", (await llamar("DELETE", `/admin/productos/${idA}`, null, tokenAdmin)).estado === 404);
+  comprobar("Eliminar el libro de prueba funciona", (await llamar("DELETE", `/admin/productos/${libroPrueba.datos._id}`, null, tokenAdmin)).estado === 200);
+  }
 }
 
 // ---------------------------------------------------------------------------

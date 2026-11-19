@@ -1,3 +1,5 @@
+import ImagenTarjeta from "./ImagenTarjeta";
+
 function Galeria({ trabajos }) {
   return (
     <section id="galeria" style={{ backgroundColor: "var(--beige)" }}>
@@ -7,7 +9,7 @@ function Galeria({ trabajos }) {
         <div className="cards-grid">
           {trabajos.map((trabajo) => (
             <div className="card" key={trabajo._id}>
-              <div className="card-img" style={{ backgroundImage: `url('${trabajo.imagen}')` }}></div>
+              <ImagenTarjeta src={trabajo.imagen} alt={trabajo.titulo} icono="🎨" />
               <div className="card-content">
                 <h3 className="card-title">{trabajo.titulo}</h3>
                 <p className="card-desc">{trabajo.descripcion}</p>

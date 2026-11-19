@@ -634,3 +634,402 @@
             margin: 4rem auto;
             padding: 0 1rem;
         }
+
+
+        /* --- Caja (panel del cajero) --- */
+        .caja-buscador input {
+            max-width: 480px;
+            background-color: #fff;
+            color: var(--brown);
+            border: 1px solid var(--sage);
+        }
+
+        tr.fila-abierta td {
+            background-color: var(--cream);
+        }
+
+        tr.fila-detalle > td {
+            background-color: var(--cream);
+            padding: 0;
+        }
+
+        .caja-detalle {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.5rem;
+            padding: 1.5rem;
+        }
+
+        .caja-detalle h4 {
+            font-family: var(--font-serif);
+            color: var(--coffee);
+            margin-bottom: 0.6rem;
+        }
+
+        .caja-detalle ul {
+            list-style: none;
+            margin-bottom: 0.8rem;
+        }
+
+        .caja-detalle li {
+            padding: 0.2rem 0;
+        }
+
+        .caja-detalle p {
+            margin-bottom: 0.7rem;
+        }
+
+        .caja-acciones {
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+        }
+
+        .nota-caja {
+            font-size: 0.85rem;
+            opacity: 0.85;
+        }
+
+        .codigo-grande {
+            font-family: monospace;
+            font-size: 1.2rem;
+            letter-spacing: 0.08em;
+        }
+
+        .qr-caja {
+            text-align: center;
+        }
+
+        .codigo-qr {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 6px;
+        }
+
+
+        /* =====================================================
+           Etapa 4: tienda (menú, carrito, seguimiento)
+           ===================================================== */
+        .card-img img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        /* Cuando una foto no carga */
+        .sin-imagen {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3.5rem;
+            background: linear-gradient(135deg, var(--beige), var(--cream));
+        }
+
+        .filtros-menu {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 0.6rem;
+            margin: 1.5rem 0 2.5rem;
+        }
+
+        .filtros-menu .btn {
+            padding: 0.5rem 1.3rem;
+        }
+
+        .tag.agotado { background-color: #B5543B; color: var(--cream); }
+        .tag.pocas { background-color: #D4A373; color: var(--cream); }
+        .tag.disponible { background-color: var(--sage); color: var(--cream); }
+
+        .nota-stock {
+            font-size: 0.85rem;
+            opacity: 0.85;
+            margin-top: 0.5rem;
+        }
+
+        .aviso-libros, .aviso-reserva {
+            max-width: 800px;
+            margin: 0 auto 2.5rem;
+            text-align: center;
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            background-color: var(--cream);
+            border: 1px dashed var(--sage);
+        }
+
+        .aviso-reserva {
+            margin-bottom: 2rem;
+            background-color: rgba(250, 247, 242, 0.12);
+            border-color: var(--sage);
+            color: var(--cream);
+        }
+
+        /* Carrito en la barra de navegación */
+        .nav-carrito {
+            text-decoration: none;
+            color: var(--coffee);
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .nav-carrito-cantidad {
+            display: inline-block;
+            min-width: 1.4rem;
+            padding: 0 0.4rem;
+            text-align: center;
+            border-radius: 20px;
+            background-color: var(--coffee);
+            color: var(--cream);
+            font-size: 0.8rem;
+        }
+
+        /* Páginas internas (carrito, seguimiento) */
+        .pagina-interna {
+            min-height: 70vh;
+            padding-top: 4rem;
+            padding-bottom: 4rem;
+        }
+
+        .carrito-lineas {
+            max-width: 800px;
+            margin: 2rem auto 0;
+        }
+
+        .carrito-linea {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--beige);
+            flex-wrap: wrap;
+        }
+
+        .carrito-nombre {
+            flex: 1;
+            min-width: 180px;
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+        }
+
+        .carrito-problema {
+            color: #B5543B;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .carrito-cantidad {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .carrito-cantidad .btn, .carrito-linea > .btn {
+            padding: 0.3rem 0.9rem;
+        }
+
+        .carrito-subtotal {
+            min-width: 4.5rem;
+            text-align: right;
+            font-weight: 600;
+        }
+
+        .carrito-total {
+            max-width: 800px;
+            margin: 1.5rem auto 0;
+            text-align: right;
+            font-size: 1.4rem;
+        }
+
+        .datos-pago {
+            background-color: rgba(250, 247, 242, 0.1);
+            border: 1px solid var(--sage);
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .datos-pago ul {
+            list-style: none;
+            margin: 0.6rem 0;
+        }
+
+        .datos-pago-aviso {
+            display: inline-block;
+            background-color: #B5543B;
+            color: var(--cream);
+            padding: 0.3rem 0.8rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .detalle-pedido {
+            max-width: 800px;
+            margin: 2rem auto 0;
+            background-color: #fff;
+            border: 1px solid var(--beige);
+            border-radius: 16px;
+            padding: 2rem;
+        }
+
+        .detalle-pedido-cabecera {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .detalle-pedido-estados {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            align-items: flex-start;
+        }
+
+        .detalle-pedido-items {
+            list-style: none;
+            margin: 1rem 0;
+        }
+
+        .detalle-pedido-items li {
+            padding: 0.3rem 0;
+        }
+
+        .explicacion-pedido {
+            margin: 1rem 0 1.5rem;
+            padding: 1rem;
+            background-color: var(--cream);
+            border-radius: 12px;
+        }
+
+        .enlace-privado {
+            word-break: break-all;
+            font-family: monospace;
+        }
+
+        .pedidos-guardados {
+            max-width: 800px;
+            margin: 2rem auto 0;
+        }
+
+        .pedidos-guardados ul {
+            margin-top: 0.6rem;
+            padding-left: 1.2rem;
+        }
+
+        /* =====================================================
+           Etapa 5: panel del administrador
+           ===================================================== */
+        .dash-tarjetas {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+            gap: 1.2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .dash-tarjeta {
+            background-color: #fff;
+            border: 1px solid var(--beige);
+            border-radius: 14px;
+            padding: 1.2rem 1.5rem;
+        }
+
+        .dash-tarjeta p {
+            font-size: 0.9rem;
+            opacity: 0.85;
+        }
+
+        .dash-valor {
+            font-family: var(--font-serif);
+            font-size: 1.9rem;
+            color: var(--coffee);
+            margin-top: 0.3rem;
+        }
+
+        .dash-aviso {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+            background-color: #FBEDE3;
+            border: 1px solid #D4A373;
+            border-radius: 12px;
+            padding: 0.9rem 1.3rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .dash-grafico {
+            background-color: #fff;
+            border: 1px solid var(--beige);
+            border-radius: 14px;
+            padding: 1.5rem;
+        }
+
+        .dash-grafico h3 {
+            margin-bottom: 1rem;
+        }
+
+        .dash-barra-fila {
+            display: grid;
+            grid-template-columns: minmax(120px, 200px) 1fr minmax(110px, auto);
+            align-items: center;
+            gap: 0.8rem;
+            margin-bottom: 0.7rem;
+        }
+
+        .dash-barra-fondo {
+            background-color: var(--cream);
+            border-radius: 8px;
+            height: 22px;
+            overflow: hidden;
+        }
+
+        .dash-barra {
+            height: 100%;
+            background-color: var(--sage);
+            border-radius: 8px;
+            min-width: 4px;
+        }
+
+        .form-admin {
+            background-color: #fff;
+            border: 1px solid var(--beige);
+            border-radius: 14px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-admin input, .form-admin select, .form-admin textarea {
+            background-color: #fff;
+            color: var(--brown);
+            border: 1px solid var(--sage);
+        }
+
+        .form-admin label {
+            color: var(--coffee);
+        }
+
+        .acciones-fila {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .acciones-fila .btn {
+            padding: 0.3rem 0.9rem;
+            font-size: 0.85rem;
+        }
+
+        .input-stock {
+            width: 6rem !important;
+            background-color: #fff;
+            color: var(--brown);
+            border: 1px solid var(--sage);
+            padding: 0.4rem !important;
+        }
