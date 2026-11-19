@@ -7,8 +7,8 @@ const CLAVE_SESION = "catfe_sesion";
 async function pedir(ruta, opciones = {}) {
   let respuesta;
   try {
-    respuesta = await fetch("/api" + ruta, opciones);
-  } catch (error) {
+    const API_URL = import.meta.env.VITE_API_URL || "/api";
+    respuesta = await fetch(API_URL + ruta, opciones);  } catch (error) {
     throw new Error("No se pudo conectar con el servidor. ¿Está encendido el backend?");
   }
 
